@@ -34,6 +34,8 @@
 #define FACE_COLOR_CYAN   (FACE_COLOR_BLUE | FACE_COLOR_GREEN)
 #define FACE_COLOR_PURPLE (FACE_COLOR_BLUE | FACE_COLOR_RED)
 
+extern void enviaFaceMsg(const char* msg);
+
 typedef struct {
         size_t size; //number of values used for filtering
         size_t index; //current value index
@@ -170,6 +172,7 @@ static int run_face_recognition(dl_matrix3du_t *image_matrix, box_array_t *net_b
         Serial.println("Could not allocate face recognition buffer");
         return matched_id;
     }
+
     if (align_face(net_boxes, image_matrix, aligned_face) == ESP_OK){
         if (is_enrolling == 1){
             int8_t left_sample_face = enroll_face(&id_list, aligned_face);
@@ -194,29 +197,31 @@ static int run_face_recognition(dl_matrix3du_t *image_matrix, box_array_t *net_b
                 rgb_printf(image_matrix, FACE_COLOR_GREEN,
                            "Hello Subject %u", matched_id);
 
-                // >>> AQUI: face reconhecida
+                // >>> face reconhecida
                 Serial.println("FACE_OK");
-                Serial1.println("FACE_OK");
-
+                enviaFaceMsg("FACE_OK");
             } else {
                 Serial.println("No Match Found");
                 rgb_print(image_matrix, FACE_COLOR_RED, "Intruder Alert!");
                 matched_id = -1;
 
-                // >>> AQUI: face não reconhecida
+                // >>> face não reconhecida
                 Serial.println("FACE_FAIL");
-                Serial1.println("FACE_FAIL");
-                
+                enviaFaceMsg("FACE_FAIL");
             }
         }
     } else {
+        // align_face falhou => Face Not Aligned
         Serial.println("Face Not Aligned");
         //rgb_print(image_matrix, FACE_COLOR_YELLOW, "Human Detected");
+        // >>> face detetada mas mal alinhada
+        enviaFaceMsg("FACE_ALIGN");
     }
 
     dl_matrix3du_free(aligned_face);
     return matched_id;
 }
+
 
 
 static size_t jpg_encode_stream(void * arg, size_t index, const void* data, size_t len){
